@@ -3,7 +3,7 @@ import openai
 import pyttsx3
 
 # === 🔐 Setup your API Key ===
-client = openai.OpenAI(api_key="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")  # Replace with your real key
+client = openai.OpenAI(api_key="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")  # Replace with your real key
 
 # === 🔊 Text-to-Speech Function ===
 engine = pyttsx3.init()
@@ -52,4 +52,5 @@ if st.session_state.history:
     for msg in st.session_state.history:
         role = "👤 You" if msg["role"] == "user" else "🤖 AI"
         st.markdown(f"**{role}:** {msg['content']}")
+
 
