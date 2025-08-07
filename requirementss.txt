@@ -1,5 +1,5 @@
 streamlit
-openai
-SpeechRecognition
-pyaudio
-streamlit_webrtc
+openai>=1.0.0
+pyttsx3
+
+
