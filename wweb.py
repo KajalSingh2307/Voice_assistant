@@ -1,79 +1,55 @@
 import streamlit as st
 import openai
-import speech_recognition as sr
-import streamlit.components.v1 as components
+import pyttsx3
 
-# ========== API Key ==========
-openai.api_key = "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"  # ⚠️ Replace with a new secure API key
+# === 🔐 Setup your API Key ===
+client = openai.OpenAI(api_key="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")  # Replace with your real key
 
-# ========== Streamlit Setup ==========
-st.set_page_config(page_title="AI Voice Assistant", layout="centered")
-st.title("🗣️ AI Voice Assistant")
-st.markdown("Talk or type to your assistant and get spoken responses!")
+# === 🔊 Text-to-Speech Function ===
+engine = pyttsx3.init()
 
-# ========== Session State for Chat History ==========
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-
-# ========== Function to Speak Text in Browser ==========
 def speak_text(text):
-    escaped = text.replace('"', '\\"')
-    components.html(f"""
-        <script>
-            var msg = new SpeechSynthesisUtterance("{escaped}");
-            window.speechSynthesis.speak(msg);
-        </script>
-    """, height=0)
+    engine.say(text)
+    engine.runAndWait()
 
-# ========== Function to Get Response from OpenAI ==========
-def get_response(prompt):
-    st.session_state.chat_history.append(("🧑 You", prompt))
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    answer = response['choices'][0]['message']['content']
-    st.session_state.chat_history.append(("🤖 AI", answer))
-    return answer
+# === 🎯 Streamlit App ===
+st.set_page_config(page_title="AI Voice Assistant", page_icon="🗣️")
+st.title("🗣️ AI Voice Assistant")
 
-# ========== Voice Input ==========
-if st.button("🎤 Click to Speak"):
-    r = sr.Recognizer()
-    with sr.Microphone() as source:
-        st.info("Listening...")
-        audio = r.listen(source)
+# === 💬 Chat History using session_state ===
+if "history" not in st.session_state:
+    st.session_state.history = []
 
-    try:
-        user_input = r.recognize_google(audio)
-        st.success(f"You said: {user_input}")
-        ai_response = get_response(user_input)
-        st.write("🤖 AI says:", ai_response)
-        speak_text(ai_response)
+# === 📝 User Input ===
+text_input = st.text_input("Type your question or message:")
 
-    except sr.UnknownValueError:
-        st.error("Sorry, I couldn't understand what you said.")
-    except Exception as e:
-        st.error(f"Error: {e}")
-
-# ========== Text Input ==========
-text_input = st.text_input("💬 Or type your question here:")
+# === 🤖 Handle Input and AI Response ===
 if text_input:
-    try:
-        ai_response = get_response(text_input)
-        st.write("🤖 AI says:", ai_response)
-        speak_text(ai_response)
-    except Exception as e:
-        st.error(f"Error: {e}")
+    # Add user message to history
+    st.session_state.history.append({"role": "user", "content": text_input})
 
-# ========== Display Chat History ==========
-with st.expander("🗂️ Chat History", expanded=True):
-    for role, message in st.session_state.chat_history:
-        if role == "🧑 You":
-            st.markdown(f"**{role}:** {message}")
-        else:
-            st.markdown(f"**{role}:** {message}")
+    # Send to OpenAI
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=st.session_state.history
+    )
 
-# ========== Clear Chat History ==========
-if st.button("🧹 Clear Chat History"):
-    st.session_state.chat_history = []
-    st.success("Chat history cleared.")
+    # Extract response
+    answer = response.choices[0].message.content
+
+    # Add AI response to history
+    st.session_state.history.append({"role": "assistant", "content": answer})
+
+    # Show AI response
+    st.success(f"🤖 AI says: {answer}")
+
+    # Speak it
+    speak_text(answer)
+
+# === 📜 Display Full Chat History ===
+if st.session_state.history:
+    st.markdown("### 💬 Chat History")
+    for msg in st.session_state.history:
+        role = "👤 You" if msg["role"] == "user" else "🤖 AI"
+        st.markdown(f"**{role}:** {msg['content']}")
+
